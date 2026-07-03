@@ -171,54 +171,143 @@
     if (path === here || (path === 'index.html' && inWork)) a.classList.add('is-active');
   });
 
-  /* ---------------- hero split-text reveal ---------------- */
+  /* ---------------- hero text reveal ---------------- */
   function runHeroReveal() {
-    var lines = document.querySelectorAll('.hero-title .reveal-line, .hero-kicker, .hero-sub, .hero-scroll');
+    var lines = document.querySelectorAll('.hero-kicker, .hero-sub');
     if (!lines.length) return;
     if (hasGSAP && !reduceMotion) {
       gsap.set(lines, { opacity: 1 });
-      gsap.from('.hero-title .reveal-line > *', {
-        yPercent: 110, duration: 1.1, ease: 'power4.out', stagger: 0.08, delay: 0.15
-      });
-      gsap.from('.hero-kicker, .hero-sub, .hero-scroll', {
-        opacity: 0, y: 16, duration: 0.9, ease: 'power2.out', stagger: 0.08, delay: 0.5
+      gsap.from('.hero-kicker, .hero-sub', {
+        opacity: 0, y: 18, duration: 1, ease: 'power2.out', stagger: 0.12, delay: 0.25
       });
     } else {
       lines.forEach(function (l) { l.style.opacity = 1; });
-      document.querySelectorAll('.hero-title .reveal-line > *').forEach(function (el) {
-        el.style.transform = 'none';
-      });
     }
   }
 
-  /* ---------------- hero image cursor reveal ---------------- */
+  /* ---------------- hero image cursor reveal (canvas: noisy blob + fading trail) ---------------- */
   var heroEl = document.querySelector('.hero');
-  var heroRevealImg = document.querySelector('.hero-image-reveal');
-  if (heroEl && heroRevealImg && window.matchMedia('(hover: hover)').matches) {
-    var hrTX = -600, hrTY = -600, hrX = -600, hrY = -600, hrActive = false;
+  var heroCanvas = document.querySelector('canvas.hero-image-reveal');
+  var heroBaseImg = document.querySelector('.hero-image-base');
+  if (heroEl && heroCanvas && heroBaseImg && window.matchMedia('(hover: hover)').matches) {
+    (function () {
+      var ctx = heroCanvas.getContext('2d');
+      var maskCanvas = document.createElement('canvas');
+      var mctx = maskCanvas.getContext('2d');
+      var MASK_SCALE = 0.34; /* low-res mask = soft edges for free */
+      var W = 0, H = 0;
 
-    heroEl.addEventListener('mousemove', function (e) {
-      var r = heroEl.getBoundingClientRect();
-      hrTX = e.clientX - r.left;
-      hrTY = e.clientY - r.top;
-      hrActive = true;
-    });
-    heroEl.addEventListener('mouseleave', function () {
-      hrActive = false;
-    });
+      var img = new Image();
+      img.src = heroBaseImg.currentSrc || heroBaseImg.src;
 
-    (function heroRevealLoop() {
-      if (hrActive) {
-        hrX += (hrTX - hrX) * 0.14;
-        hrY += (hrTY - hrY) * 0.14;
-      } else {
-        /* drift the circle away softly when the cursor leaves */
-        hrX += (-600 - hrX) * 0.05;
-        hrY += (-600 - hrY) * 0.05;
+      function resize() {
+        W = heroEl.clientWidth;
+        H = heroEl.clientHeight;
+        if (!W || !H) return;
+        heroCanvas.width = W;
+        heroCanvas.height = H;
+        maskCanvas.width = Math.max(2, Math.round(W * MASK_SCALE));
+        maskCanvas.height = Math.max(2, Math.round(H * MASK_SCALE));
       }
-      heroRevealImg.style.setProperty('--mx', hrX.toFixed(1) + 'px');
-      heroRevealImg.style.setProperty('--my', hrY.toFixed(1) + 'px');
-      requestAnimationFrame(heroRevealLoop);
+      resize();
+      window.addEventListener('resize', resize);
+      if ('ResizeObserver' in window) new ResizeObserver(resize).observe(heroEl);
+
+      /* cover-fit draw, like CSS object-fit: cover */
+      function drawCover(c, w, h) {
+        if (!img.naturalWidth) return;
+        var s = Math.max(w / img.naturalWidth, h / img.naturalHeight);
+        var dw = img.naturalWidth * s, dh = img.naturalHeight * s;
+        c.drawImage(img, (w - dw) / 2, (h - dh) / 2, dw, dh);
+      }
+
+      var tx = -9999, ty = -9999, cx = -9999, cy = -9999, active = false, t = 0;
+
+      heroEl.addEventListener('mousemove', function (e) {
+        var r = heroEl.getBoundingClientRect();
+        tx = e.clientX - r.left;
+        ty = e.clientY - r.top;
+        if (!active) { cx = tx; cy = ty; }
+        active = true;
+      });
+      heroEl.addEventListener('mouseleave', function () { active = false; });
+
+      /* irregular, wobbling blob stamped into the mask */
+      function stampBlob(x, y, r) {
+        var pts = 26;
+        mctx.beginPath();
+        for (var i = 0; i <= pts; i++) {
+          var a = (i / pts) * Math.PI * 2;
+          var wob = Math.sin(a * 3 + t * 1.9) * 0.16
+                  + Math.sin(a * 5 - t * 2.6) * 0.10
+                  + Math.sin(a * 9 + t * 3.4) * 0.06;
+          var rr = r * (1 + wob);
+          var px = x + Math.cos(a) * rr;
+          var py = y + Math.sin(a) * rr;
+          if (i === 0) mctx.moveTo(px, py); else mctx.lineTo(px, py);
+        }
+        mctx.closePath();
+        var g = mctx.createRadialGradient(x, y, r * 0.1, x, y, r * 1.15);
+        g.addColorStop(0, 'rgba(255,255,255,0.85)');
+        g.addColorStop(0.65, 'rgba(255,255,255,0.45)');
+        g.addColorStop(1, 'rgba(255,255,255,0)');
+        mctx.fillStyle = g;
+        mctx.fill();
+
+        /* grain: loose speckles scattered around the rim */
+        for (var n = 0; n < 7; n++) {
+          var na = Math.random() * Math.PI * 2;
+          var nd = r * (0.7 + Math.random() * 0.75);
+          var nr = r * (0.04 + Math.random() * 0.09);
+          mctx.beginPath();
+          mctx.arc(x + Math.cos(na) * nd, y + Math.sin(na) * nd, nr, 0, Math.PI * 2);
+          mctx.fillStyle = 'rgba(255,255,255,' + (0.12 + Math.random() * 0.2).toFixed(2) + ')';
+          mctx.fill();
+        }
+      }
+
+      var visible = true;
+      if ('IntersectionObserver' in window) {
+        new IntersectionObserver(function (entries) {
+          visible = entries[0].isIntersecting;
+        }, { threshold: 0.02 }).observe(heroEl);
+      }
+
+      var BLOB_R = 150; /* CSS px */
+
+      (function loop() {
+        requestAnimationFrame(loop);
+        if (!visible || !W) return;
+        t += 0.045;
+
+        /* trail: fade the whole mask a little every frame */
+        mctx.globalCompositeOperation = 'destination-out';
+        mctx.fillStyle = 'rgba(0,0,0,0.055)';
+        mctx.fillRect(0, 0, maskCanvas.width, maskCanvas.height);
+        mctx.globalCompositeOperation = 'source-over';
+
+        if (active) {
+          /* stamp along the movement path so fast strokes leave a continuous track */
+          var px = cx, py = cy;
+          cx += (tx - cx) * 0.22;
+          cy += (ty - cy) * 0.22;
+          var dist = Math.hypot(cx - px, cy - py);
+          var steps = Math.min(6, Math.max(1, Math.round(dist / (BLOB_R * 0.35))));
+          for (var i = 1; i <= steps; i++) {
+            var ix = px + (cx - px) * (i / steps);
+            var iy = py + (cy - py) * (i / steps);
+            stampBlob(ix * MASK_SCALE, iy * MASK_SCALE, BLOB_R * MASK_SCALE);
+          }
+        }
+
+        /* composite: sharp image, kept only where the mask glows */
+        ctx.clearRect(0, 0, W, H);
+        drawCover(ctx, W, H);
+        ctx.globalCompositeOperation = 'destination-in';
+        ctx.imageSmoothingEnabled = true;
+        ctx.drawImage(maskCanvas, 0, 0, W, H);
+        ctx.globalCompositeOperation = 'source-over';
+      })();
     })();
   }
 
