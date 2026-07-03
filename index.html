@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Bilge Günay İçözü — Creative Technologist &amp; New Media Artist</title>
+  <title>Bilge Günay İçözü — Creative Producer&amp; New Media Artist</title>
   <meta name="description" content="Bilge Günay İçözü is a creative technologist, new media artist and cultural producer working between sound, light and live experience — Valencia, Spain." />
   <meta name="theme-color" content="#0a0908" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -39,9 +39,12 @@
 
   <main id="main" class="site-main">
     <section class="hero" aria-label="Introduction">
-      <canvas class="hero-canvas" aria-hidden="true"></canvas>
+      <div class="hero-image" aria-hidden="true">
+        <img class="hero-image-base" src="assets/landingimage.png" alt="" />
+        <img class="hero-image-reveal" src="assets/landingimage.png" alt="" />
+      </div>
       <div class="shell hero-inner">
-        <p class="hero-kicker eyebrow" style="opacity:0">Creative Technologist — New Media Artist — Cultural Producer</p>
+        <p class="hero-kicker eyebrow" style="opacity:0"> New Media Artist - Creative Producer - Creative Technologist</p>
         <h1 class="hero-title">
           <span class="reveal-line" style="opacity:0"><span class="reveal-inner">Technology</span></span><br>
           <span class="reveal-line" style="opacity:0"><span class="reveal-inner">as <em>subject</em>,</span></span><br>
@@ -59,28 +62,6 @@
       </div>
 
       <div class="work-grid">
-        <a class="work-card" href="work/omada.html">
-          <div class="work-card-media"><img src="assets/omada1.jpg" alt="" loading="lazy" /></div>
-          <div class="work-card-bottom">
-            <span class="work-card-tag">Light Art Installation</span>
-            <h3 class="work-card-title">Omada</h3>
-            <div class="work-card-meta">
-              <span class="work-card-arrow">↗</span>
-            </div>
-          </div>
-        </a>
-
-        <a class="work-card" href="work/sonic-artefacts.html">
-          <div class="work-card-media"><img src="assets/sonicartefactsgallery.jpg" alt="" loading="lazy" /></div>
-          <div class="work-card-bottom">
-            <span class="work-card-tag">Sound-light Art Installation</span>
-            <h3 class="work-card-title">Sonic Artefacts</h3>
-            <div class="work-card-meta">
-              <span class="work-card-arrow">↗</span>
-            </div>
-          </div>
-        </a>
-
         <a class="work-card" href="work/collapse.html">
           <div class="work-card-media">
             <video src="assets/collapse-promo.mp4" muted loop playsinline preload="none" poster="assets/collapse5.jpg"></video>
@@ -88,17 +69,6 @@
           <div class="work-card-bottom">
             <span class="work-card-tag">Immersive Experience</span>
             <h3 class="work-card-title">Col·lapse</h3>
-            <div class="work-card-meta">
-              <span class="work-card-arrow">↗</span>
-            </div>
-          </div>
-        </a>
-
-        <a class="work-card" href="work/archivo-cero.html">
-          <div class="work-card-media"><img src="assets/ArchivoCero7.png" alt="" loading="lazy" /></div>
-          <div class="work-card-bottom">
-            <span class="work-card-tag">Experiential Exhibition</span>
-            <h3 class="work-card-title">Archivo Cero</h3>
             <div class="work-card-meta">
               <span class="work-card-arrow">↗</span>
             </div>
@@ -116,11 +86,44 @@
           </div>
         </a>
 
+        <a class="work-card" href="work/sonic-artefacts.html">
+          <div class="work-card-media"><img src="assets/sonicartefactsgallery.jpg" alt="" loading="lazy" /></div>
+          <div class="work-card-bottom">
+            <span class="work-card-tag">Sound-light Art Installation</span>
+            <h3 class="work-card-title">Sonic Artefacts</h3>
+            <div class="work-card-meta">
+              <span class="work-card-arrow">↗</span>
+            </div>
+          </div>
+        </a>
+
         <a class="work-card" href="work/udne.html">
           <div class="work-card-media"><img src="assets/artbaselgallery.jpeg" alt="" loading="lazy" /></div>
           <div class="work-card-bottom">
             <span class="work-card-tag">Art Basel Miami Beach'22 Interactive Experience</span>
             <h3 class="work-card-title">Udnē</h3>
+            <div class="work-card-meta">
+              <span class="work-card-arrow">↗</span>
+            </div>
+          </div>
+        </a>
+
+        <a class="work-card" href="work/omada.html">
+          <div class="work-card-media"><img src="assets/omada1.jpg" alt="" loading="lazy" /></div>
+          <div class="work-card-bottom">
+            <span class="work-card-tag">Light Art Installation</span>
+            <h3 class="work-card-title">Omada</h3>
+            <div class="work-card-meta">
+              <span class="work-card-arrow">↗</span>
+            </div>
+          </div>
+        </a>
+
+        <a class="work-card" href="work/archivo-cero.html">
+          <div class="work-card-media"><img src="assets/ArchivoCero7.png" alt="" loading="lazy" /></div>
+          <div class="work-card-bottom">
+            <span class="work-card-tag">Experiential Exhibition</span>
+            <h3 class="work-card-title">Archivo Cero</h3>
             <div class="work-card-meta">
               <span class="work-card-arrow">↗</span>
             </div>
@@ -151,11 +154,9 @@
     </div>
   </footer>
 
-  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/gsap@3/dist/gsap.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/gsap@3/dist/ScrollTrigger.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/lenis@1/dist/lenis.min.js"></script>
   <script src="js/main.js"></script>
-  <script src="js/scene.js"></script>
 </body>
 </html>

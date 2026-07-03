@@ -191,6 +191,37 @@
     }
   }
 
+  /* ---------------- hero image cursor reveal ---------------- */
+  var heroEl = document.querySelector('.hero');
+  var heroRevealImg = document.querySelector('.hero-image-reveal');
+  if (heroEl && heroRevealImg && window.matchMedia('(hover: hover)').matches) {
+    var hrTX = -600, hrTY = -600, hrX = -600, hrY = -600, hrActive = false;
+
+    heroEl.addEventListener('mousemove', function (e) {
+      var r = heroEl.getBoundingClientRect();
+      hrTX = e.clientX - r.left;
+      hrTY = e.clientY - r.top;
+      hrActive = true;
+    });
+    heroEl.addEventListener('mouseleave', function () {
+      hrActive = false;
+    });
+
+    (function heroRevealLoop() {
+      if (hrActive) {
+        hrX += (hrTX - hrX) * 0.14;
+        hrY += (hrTY - hrY) * 0.14;
+      } else {
+        /* drift the circle away softly when the cursor leaves */
+        hrX += (-600 - hrX) * 0.05;
+        hrY += (-600 - hrY) * 0.05;
+      }
+      heroRevealImg.style.setProperty('--mx', hrX.toFixed(1) + 'px');
+      heroRevealImg.style.setProperty('--my', hrY.toFixed(1) + 'px');
+      requestAnimationFrame(heroRevealLoop);
+    })();
+  }
+
   /* ---------------- scroll reveals ---------------- */
   if (hasGSAP && window.ScrollTrigger && !reduceMotion) {
     document.querySelectorAll('[data-reveal]').forEach(function (el) {
