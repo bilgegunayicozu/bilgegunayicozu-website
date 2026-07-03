@@ -191,10 +191,28 @@
   var heroBaseImg = document.querySelector('.hero-image-base');
   if (heroEl && heroCanvas && heroBaseImg && window.matchMedia('(hover: hover)').matches) {
     (function () {
+
+      /* ================= REVEAL EFFECT SETTINGS — tweak freely =================
+         NOISE_SPEED  how fast the blob edge morphs        0.004 slow … 0.04 fast
+         NOISE_AMOUNT how irregular the edge is            0 circle  … 0.3 wild
+         BLOB_RADIUS  size of the reveal, in CSS pixels
+         TRAIL_FADE   how quickly the trail dissolves      0.02 long … 0.12 short
+         EDGE_SOFT    extra blur over the whole reveal, px 0 crisp   … 30 misty
+         FOLLOW       how tightly it chases the cursor     0.05 floaty … 0.3 tight
+         GRAIN        rim speckles per frame               0 none    … 8 gritty
+      ========================================================================== */
+      var NOISE_SPEED  = 0.010;
+      var NOISE_AMOUNT = 0.11;
+      var BLOB_RADIUS  = 160;
+      var TRAIL_FADE   = 0.045;
+      var EDGE_SOFT    = 16;
+      var FOLLOW       = 0.14;
+      var GRAIN        = 3;
+
       var ctx = heroCanvas.getContext('2d');
       var maskCanvas = document.createElement('canvas');
       var mctx = maskCanvas.getContext('2d');
-      var MASK_SCALE = 0.34; /* low-res mask = soft edges for free */
+      var MASK_SCALE = 0.25; /* low-res mask = soft edges for free */
       var W = 0, H = 0;
 
       var img = new Image();
@@ -232,36 +250,38 @@
       });
       heroEl.addEventListener('mouseleave', function () { active = false; });
 
-      /* irregular, wobbling blob stamped into the mask */
-      function stampBlob(x, y, r) {
-        var pts = 26;
+      /* irregular, slowly-morphing blob stamped into the mask.
+         alpha is shared across the stroke so overlapping stamps
+         melt into one continuous shape instead of visible circles */
+      function stampBlob(x, y, r, alpha) {
+        var pts = 30;
         mctx.beginPath();
         for (var i = 0; i <= pts; i++) {
           var a = (i / pts) * Math.PI * 2;
-          var wob = Math.sin(a * 3 + t * 1.9) * 0.16
-                  + Math.sin(a * 5 - t * 2.6) * 0.10
-                  + Math.sin(a * 9 + t * 3.4) * 0.06;
+          var wob = Math.sin(a * 3 + t * 1.0) * (NOISE_AMOUNT * 0.6)
+                  + Math.sin(a * 5 - t * 1.6) * (NOISE_AMOUNT * 0.3)
+                  + Math.sin(a * 7 + t * 2.2) * (NOISE_AMOUNT * 0.1);
           var rr = r * (1 + wob);
           var px = x + Math.cos(a) * rr;
           var py = y + Math.sin(a) * rr;
           if (i === 0) mctx.moveTo(px, py); else mctx.lineTo(px, py);
         }
         mctx.closePath();
-        var g = mctx.createRadialGradient(x, y, r * 0.1, x, y, r * 1.15);
-        g.addColorStop(0, 'rgba(255,255,255,0.85)');
-        g.addColorStop(0.65, 'rgba(255,255,255,0.45)');
+        var g = mctx.createRadialGradient(x, y, r * 0.05, x, y, r * 1.1);
+        g.addColorStop(0, 'rgba(255,255,255,' + (alpha).toFixed(3) + ')');
+        g.addColorStop(0.6, 'rgba(255,255,255,' + (alpha * 0.55).toFixed(3) + ')');
         g.addColorStop(1, 'rgba(255,255,255,0)');
         mctx.fillStyle = g;
         mctx.fill();
 
-        /* grain: loose speckles scattered around the rim */
-        for (var n = 0; n < 7; n++) {
+        /* grain: a few soft freckles near the rim (they inherit the blur pass) */
+        for (var n = 0; n < GRAIN; n++) {
           var na = Math.random() * Math.PI * 2;
-          var nd = r * (0.7 + Math.random() * 0.75);
-          var nr = r * (0.04 + Math.random() * 0.09);
+          var nd = r * (0.85 + Math.random() * 0.5);
+          var nr = r * (0.06 + Math.random() * 0.08);
           mctx.beginPath();
           mctx.arc(x + Math.cos(na) * nd, y + Math.sin(na) * nd, nr, 0, Math.PI * 2);
-          mctx.fillStyle = 'rgba(255,255,255,' + (0.12 + Math.random() * 0.2).toFixed(2) + ')';
+          mctx.fillStyle = 'rgba(255,255,255,' + (alpha * (0.15 + Math.random() * 0.2)).toFixed(3) + ')';
           mctx.fill();
         }
       }
@@ -273,39 +293,44 @@
         }, { threshold: 0.02 }).observe(heroEl);
       }
 
-      var BLOB_R = 150; /* CSS px */
+      var supportsFilter = typeof mctx.filter === 'string';
 
       (function loop() {
         requestAnimationFrame(loop);
         if (!visible || !W) return;
-        t += 0.045;
+        t += NOISE_SPEED * 2.6;
 
         /* trail: fade the whole mask a little every frame */
         mctx.globalCompositeOperation = 'destination-out';
-        mctx.fillStyle = 'rgba(0,0,0,0.055)';
+        mctx.fillStyle = 'rgba(0,0,0,' + TRAIL_FADE + ')';
         mctx.fillRect(0, 0, maskCanvas.width, maskCanvas.height);
         mctx.globalCompositeOperation = 'source-over';
 
         if (active) {
-          /* stamp along the movement path so fast strokes leave a continuous track */
+          /* dense, low-alpha stamps along the path: overlaps fuse into
+             one fluid shape rather than a chain of visible circles */
           var px = cx, py = cy;
-          cx += (tx - cx) * 0.22;
-          cy += (ty - cy) * 0.22;
+          cx += (tx - cx) * FOLLOW;
+          cy += (ty - cy) * FOLLOW;
           var dist = Math.hypot(cx - px, cy - py);
-          var steps = Math.min(6, Math.max(1, Math.round(dist / (BLOB_R * 0.35))));
+          var steps = Math.min(10, Math.max(1, Math.ceil(dist / (BLOB_RADIUS * 0.12))));
+          var alpha = 0.5 / Math.sqrt(steps);
           for (var i = 1; i <= steps; i++) {
             var ix = px + (cx - px) * (i / steps);
             var iy = py + (cy - py) * (i / steps);
-            stampBlob(ix * MASK_SCALE, iy * MASK_SCALE, BLOB_R * MASK_SCALE);
+            stampBlob(ix * MASK_SCALE, iy * MASK_SCALE, BLOB_RADIUS * MASK_SCALE, alpha);
           }
         }
 
-        /* composite: sharp image, kept only where the mask glows */
+        /* composite: sharp image, kept only where the mask glows.
+           the blur pass melts stamps, edges and grain together */
         ctx.clearRect(0, 0, W, H);
         drawCover(ctx, W, H);
         ctx.globalCompositeOperation = 'destination-in';
         ctx.imageSmoothingEnabled = true;
+        if (supportsFilter && EDGE_SOFT > 0) ctx.filter = 'blur(' + EDGE_SOFT + 'px)';
         ctx.drawImage(maskCanvas, 0, 0, W, H);
+        ctx.filter = 'none';
         ctx.globalCompositeOperation = 'source-over';
       })();
     })();
